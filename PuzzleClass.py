@@ -3,8 +3,6 @@ import numpy as np
 from PIL import Image
 import sklearn
 from show_pic import show_pic
-from remove_element_from_array import remove_element_from_array
-from rank_pieces_match import rank_pieces_match
 
 
 class PuzzlePicture:
@@ -90,6 +88,38 @@ class PuzzlePicture:
         show_pic(self.color_pieces, self.m_horizontal_chunks)
         plt.waitforbuttonpress()
 
+
+    def rank_pieces_match(self, p1, p2, direction):
+        """direction ex: connect p2 up from p1 or left from P1"""
+        if direction == 'up':
+            e1, e2 = p1[0, :], p2[-1, :]
+        elif direction == 'down':
+            e1, e2 = p1[-1, :], p2[0, :]
+        elif direction == 'left':
+            e1, e2 = p1[:, 1], p2[:, -1]
+        elif direction == 'right':
+            e1, e2 = p1[:, -1], p2[:, 1]
+        else:
+            print('the direction is not valid, please choose another direction')
+            return -10
+        rank = self._rank_edges(e1, e2)
+        return rank
+
+    def _rank_edges(self, e1, e2):
+        rank = sum(abs(e1 - e2)) / len(e1)
+        return rank
+
+    def _remove_element_from_array(self, list_pieces, arr):
+        ind = 0
+        size = len(list_pieces)
+        while ind != size and not np.array_equal(list_pieces[ind], arr):
+            ind += 1
+        if ind != size:
+            list_pieces.pop(ind)
+            return list_pieces, ind
+        else:
+            raise ValueError('array not found in list.')
+
     def solve_puzzle(self):
         fig_solve = plt.figure(2, figsize=(6, 6))
         num_in_subplot = 1
@@ -106,17 +136,17 @@ class PuzzlePicture:
                     piece_above_spot = solved_puzzle[-self.m_horizontal_chunks]  # one line back to get piece above spot
                 for piece in list_pieces:
                     self.display_piece_in_subplot(num_in_subplot, piece, fig_solve, 1)
-                    rank_vrt = rank_pieces_match(new_solved_piece, piece, 'right')
-                    rank_hrz = rank_pieces_match(piece_above_spot, piece, 'down')
+                    rank_vrt = self.rank_pieces_match(new_solved_piece, piece, 'right')
+                    rank_hrz = self.rank_pieces_match(piece_above_spot, piece, 'down')
                     tot_rank = rank_hrz + rank_vrt
                     if tot_rank < best_rank:  # minimum rank is the best
                         best_rank = tot_rank
                         cur_new_solved_piece = piece
                 new_solved_piece = cur_new_solved_piece
                 solved_puzzle.append(new_solved_piece)
-                list_pieces, ind = remove_element_from_array(list_pieces, new_solved_piece)
+                list_pieces, ind = self._remove_element_from_array(list_pieces, new_solved_piece)
                 new_color_solved_piece = self.color_pieces[ind]
-                self.color_pieces, ind = remove_element_from_array(self.color_pieces, new_color_solved_piece)
+                self.color_pieces, ind = self._remove_element_from_array(self.color_pieces, new_color_solved_piece)
                 self.display_piece_in_subplot(num_in_subplot, new_color_solved_piece, fig_solve)
                 num_in_subplot += 1
         return solved_puzzle
